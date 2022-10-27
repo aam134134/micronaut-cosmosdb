@@ -1,24 +1,15 @@
 package com.example.micronaut.cosmosdb;
 
-import com.azure.cosmos.CosmosClient;
-import com.azure.cosmos.CosmosClientBuilder;
-import com.azure.cosmos.CosmosContainer;
-import com.azure.cosmos.CosmosDatabase;
-import com.azure.cosmos.models.*;
+import com.azure.cosmos.models.CosmosItemResponse;
+import com.azure.cosmos.models.CosmosQueryRequestOptions;
+import com.azure.cosmos.models.FeedResponse;
+import com.azure.cosmos.models.PartitionKey;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import com.example.micronaut.cosmosdb.model.Order;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.util.stream.Collectors;
-
 public class CosmosDbSyncTest extends CosmosDbTest {
-
-    public CosmosClient cosmosClient;
-
-    private CosmosDatabase database;
-
-    private CosmosContainer container;
 
     @Test
     public void testReadItem() {
@@ -52,45 +43,10 @@ public class CosmosDbSyncTest extends CosmosDbTest {
                 "SELECT * FROM Orders WHERE Orders.name IN ('bill')", new CosmosQueryRequestOptions(), Order.class);
         Assertions.assertTrue(cosmosPagedIterable.stream().count() == 1);
 
-        cosmosPagedIterable.iterableByPage(10).forEach(cosmosItemPropertiesFeedResponse -> {
-            System.out.println("Result size: " + cosmosItemPropertiesFeedResponse.getResults().size());
+        final Iterable<FeedResponse<Order>> responseIterable = cosmosPagedIterable.iterableByPage(10);
+        final FeedResponse<Order> response = responseIterable.iterator().next();
 
-            System.out.println("Item Ids " + cosmosItemPropertiesFeedResponse
-                    .getResults()
-                    .stream()
-                    .map(Order::getId)
-                    .collect(Collectors.toList()));
-        });
-    }
-
-    @Override
-    void setClient() {
-        cosmosClient = new CosmosClientBuilder()
-                .gatewayMode()
-                .endpointDiscoveryEnabled(false)
-                .endpoint(cosmos.getEmulatorEndpoint())
-                .key(cosmos.getEmulatorKey())
-                .buildClient();
-    }
-
-    @Override
-    void initDb() {
-        if (database != null) {
-            database.delete();
-        }
-
-        final CosmosDatabaseResponse cosmosDatabaseResponse = cosmosClient.createDatabaseIfNotExists(getDbName());
-        database = cosmosClient.getDatabase(cosmosDatabaseResponse.getProperties().getId());
-    }
-
-    @Override
-    void initContainer() {
-
-        // a Container is  like a DB table/Elasticsearch Index
-        // partition key is a field in a stored document;
-        // CosmosDB uses this key to assign which partition an item/doc will be stored;
-        // the partition key should be a value that is as random as possible (uuid etc.)
-        final CosmosContainerResponse cosmosContainerResponse = database.createContainerIfNotExists(new CosmosContainerProperties(getContainerName(), "/name"), ThroughputProperties.createManualThroughput(400));
-        container = database.getContainer(cosmosContainerResponse.getProperties().getId());
+        Assertions.assertEquals(1, response.getResults().size());
+        Assertions.assertEquals("a1", response.getResults().iterator().next().getId());
     }
 }

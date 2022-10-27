@@ -1,27 +1,16 @@
 package com.example.micronaut.cosmosdb;
 
-import com.azure.cosmos.CosmosAsyncClient;
-import com.azure.cosmos.CosmosAsyncContainer;
-import com.azure.cosmos.CosmosAsyncDatabase;
-import com.azure.cosmos.CosmosClientBuilder;
-import com.azure.cosmos.models.*;
+import com.azure.cosmos.models.CosmosItemResponse;
+import com.azure.cosmos.models.PartitionKey;
 import com.azure.cosmos.util.CosmosPagedFlux;
 import com.example.micronaut.cosmosdb.model.Order;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
 public class CosmosDbAsyncTest extends CosmosDbTest {
-
-    public CosmosAsyncClient cosmosAsyncClient;
-
-
-    private CosmosAsyncDatabase asyncDatabase;
-
-    private CosmosAsyncContainer asyncContainer;
 
     @Test
     public void testReadItem() {
@@ -56,39 +45,5 @@ public class CosmosDbAsyncTest extends CosmosDbTest {
             Assertions.assertTrue(fluxResponse.getResults().stream().allMatch(order -> order.getId().equals(o.getId())));
             return Flux.empty();
         });
-    }
-
-    @Override
-    public void setClient() {
-        cosmosAsyncClient = new CosmosClientBuilder()
-                .gatewayMode()
-                .endpointDiscoveryEnabled(false)
-                .endpoint(cosmos.getEmulatorEndpoint())
-                .key(cosmos.getEmulatorKey())
-                .buildAsyncClient();
-    }
-
-    @Override
-    void initDb() {
-        if (asyncDatabase != null) {
-            asyncDatabase.delete().block();
-        }
-
-        Mono<CosmosDatabaseResponse> databaseIfNotExists = cosmosAsyncClient.createDatabaseIfNotExists(getDbName());
-        databaseIfNotExists.flatMap(databaseResponse -> {
-            asyncDatabase = cosmosAsyncClient.getDatabase(databaseResponse.getProperties().getId());
-            return Mono.empty();
-        }).block();
-    }
-
-    @Override
-    void initContainer() {
-
-        // a Container is  like a DB table/Elasticsearch Index
-        // partition key is a field in a stored document;
-        // CosmosDB uses this key to assign which partition an item/doc will be stored;
-        // the partition key should be a value that is as random as possible (uuid etc.)
-        final Mono<CosmosContainerResponse> containerIfNotExists = asyncDatabase.createContainerIfNotExists(new CosmosContainerProperties(getContainerName(), "/name"), ThroughputProperties.createManualThroughput(400));
-        asyncContainer = asyncDatabase.getContainer(containerIfNotExists.block().getProperties().getId());
     }
 }
