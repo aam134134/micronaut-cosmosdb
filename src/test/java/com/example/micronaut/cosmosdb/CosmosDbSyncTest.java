@@ -36,11 +36,10 @@ public class CosmosDbSyncTest extends CosmosDbTest {
         Assertions.assertEquals(201, container.createItem(o).getStatusCode());
 
         /**
-         * Notice how the SQL query refers to the plural of the JSON object - Orders (from Order.class)
-         * CosmosDB automatically makes it plural; not sure how/if that can be configured
+         * Can use anything for the "table" name
          */
         final CosmosPagedIterable<Order> cosmosPagedIterable = container.queryItems(
-                "SELECT * FROM Orders WHERE Orders.name IN ('bill')", new CosmosQueryRequestOptions(), Order.class);
+                "SELECT * FROM Anything a WHERE a.name IN ('bill')", new CosmosQueryRequestOptions(), Order.class);
         Assertions.assertTrue(cosmosPagedIterable.stream().count() == 1);
 
         final Iterable<FeedResponse<Order>> responseIterable = cosmosPagedIterable.iterableByPage(10);

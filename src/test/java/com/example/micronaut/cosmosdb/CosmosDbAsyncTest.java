@@ -36,8 +36,11 @@ public class CosmosDbAsyncTest extends CosmosDbTest {
         o.setOrderNum("1234");
         Assertions.assertEquals(201, asyncContainer.createItem(o).block().getStatusCode());
 
+        /**
+         * Can use anything for the "table" name
+         */
         CosmosPagedFlux<Order> pagedFluxResponse = asyncContainer.queryItems(
-                "SELECT * FROM Orders WHERE Orders.name IN ('bill')", Order.class);
+                "SELECT * FROM Anything a WHERE a.name IN ('bill')", Order.class);
         Assertions.assertTrue(pagedFluxResponse.byPage(10).hasElements().block().booleanValue());
 
         pagedFluxResponse.byPage(10).flatMap(fluxResponse -> {
